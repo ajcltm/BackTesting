@@ -19,6 +19,8 @@ def handle_data(dayData):
     actionDict = {'type': ''}
     if dayData == 1000:
         actionDict['type'] = 'buy'
+    if dayData == 2000:
+        actionDict['type'] = 'sell'
 
     return actionDict
 
