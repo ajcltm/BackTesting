@@ -3,35 +3,40 @@ import numpy as np
 import datetime
 import types
 from BackTestAlgo import *
-
+import Order
 
 def my_init(context):
-    context.security = 'NVDA'
+    context.symbols = ['APPL', 'NVDA']
+    context.price = 'price'
+
     context.hold = False
 
 def handle_data(context, dayData):
-    if dayData[context.security] > 0 :
+    if dayData[dayData['symbol'] == 'NVDA'].price.values[0] > 0 :
         context.hold = True
-        context.portfolio.positions[context.security].amounts = 1
-        print("long")
-    if dayData[context.security] == 2000:
+        #context.portfolio.positions[context.security].amounts = 1
+        Order.deposit(context, 500)
+        Order.order(context, ['APPL', 'NVDA'], [5, 10], [5, 10])
+        print('account: {0}'.format(context.account))
+        print('portfolio: {0}'.format(context.portfolio))
+
+    if dayData[dayData['symbol'] == 'NVDA'].price.values[0] == 2000:
         context.hold = False
         print("short")
 
-# def symbol(code):
-#     if code == 'AAPL':
-#         return 1000
-#     elif code == 'NVDA':
-#         return 1001
-#     elif code == 'SPY':
-#         return 1002
-
 if __name__ == '__main__':
 
+    # price_list = np.random.randint(650, 720, 10)
+    price_list = [10 for i in range(0, 10)]
+    date_list = [datetime.datetime(2021, 1, i + 1) for i in range(0, 10)]
+    data = pd.DataFrame(data={'NVDA': price_list, 'APPL': price_list}, index=date_list)
+    data = data.unstack()
+    data = data.reset_index()
+    data.columns = ['symbol', 'date', 'price']
+    data = data[['date', 'symbol', 'price']]
+
     tester = BackTester(initialize=my_init, tradingAlgo=handle_data)
-    print(tester.context)
-    price_list = np.random.randint(650, 720, 10)
-    date_list = [datetime.datetime(2021, 1, i+1) for i in range(0, 10)]
-    data = pd.DataFrame(data={'NVDA': price_list}, index=date_list)
+
     result = tester.run(data)
+
     print(result)
