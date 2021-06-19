@@ -3,8 +3,9 @@ import numpy as np
 import datetime
 import types
 from BackTestAlgo import *
-import Order
+from Order import *
 from DataQuery import *
+from Record import *
 
 def my_init(context):
     context.symbols = ['APPL', 'NVDA']
@@ -15,18 +16,27 @@ def my_init(context):
 
 def handle_data(context, data):
     context.i += 1
+    print('\n')
+    print(data.current_time)
     if data.current_data('NVDA', 'price') > 0 :
     # if context.i < 6 :
         context.hold = True
         #context.portfolio.positions[context.security].amounts = 1
-        Order.deposit(context, 500)
-        Order.order(context, ['APPL', 'NVDA'], [20, 10], [20, 10])
+        deposit(context, 500)
+        order(context, ['APPL', 'NVDA'], [20, 10], [20, 10])
+        sum = data.history('NVDA', 'price', 3).sum()
+        sum_alpha = data.history('NVDA', 'price', 3).sum()+5
+        # if data.history('NVDA', 'price', 3).sum() > 20:
+        print(data.current_time)
+        if data.current_time == datetime.datetime(2021, 1, 1):
+            record(context, sum=sum, sum_alpha=sum_alpha)
         print('account: {0}'.format(context.account))
         print('portfolio: {0}'.format(context.portfolio))
+        print('record: {0}'.format(context.record))
 
     # if dayData[dayData['symbol'] == 'NVDA'].price.values[0] == 2000:
     if data.current_data('NVDA', 'price') == 0 :
-        Order.order(context, ['APPL', 'NVDA'], [5, 10], [-5, -10])
+        order(context, ['APPL', 'NVDA'], [5, 10], [-5, -10])
         print('account: {0}'.format(context.account))
         print('portfolio: {0}'.format(context.portfolio))
         context.hold = False

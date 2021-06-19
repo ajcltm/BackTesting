@@ -13,6 +13,9 @@ class BackTester:
         # initialize 함수로 context에 symbols와 price 상태 저장(symbols와 price에 해당하는 이름을 반드시 정의해줘야 함)
         # 그 밖에 사용하고자 하는 사용자 정의 key : value 지정할 수 있음 ( ex : context.hold = True )
 
+        self.context.current_time = 0
+        # context에 current_time 정보 저장하기
+
         withdrawal = {}
         for symbol in self.context.symbols:
             withdrawal[symbol] = {'unitPrice': 0, 'amounts': 0}
@@ -27,6 +30,10 @@ class BackTester:
         portfolio = portfolio
         self.context.portfolio = portfolio
         # context에 portfolio 상태 공간 만들기( {'cash': %%, 'stock' : {'symbol':{'price':%%, 'amounts':%%}}} 형태)
+
+        self.context.record = {}
+        self.context.record_on = False
+        # context에 record 상태 공간 만들기, 녹화 스위치(record_on)는 껴놓은 상태로 저장
 
         self.tradingAlgo = tradingAlgo
 
@@ -45,6 +52,8 @@ class BackTester:
         for i in range(0, len(date_univers)):
             current_time = date_univers.iloc[i]
             # 현재 일자 정의
+
+            self.context.current_time = current_time
 
             dataquery = DataQuery(data, current_time)
             # DataQuery의 class 객체 생성(run 함수에 넣은 data 인자와 현재 시간을 인수로 넣어줌)
@@ -71,7 +80,13 @@ class BackTester:
 
             s = pd.Series([current_time, portfolio_value], index=resultColumns)
             self.result = self.result.append(s, ignore_index=True)
-            # result 공간에 결과값 저장
+            # result 데이터프레임 공간에 결과값 저장
+
+
+        if bool(self.context.record):
+        # record된 것이 있다면
+            self.result = pd.merge(self.result, self.context.record_df, how='outer', left_on='date', right_on='date')
+            # date 칼럼을 기준으로 result 데이터프레임과 record 데이터프레임 병합(없는 값은 nan 처리)
 
         return self.result
 
