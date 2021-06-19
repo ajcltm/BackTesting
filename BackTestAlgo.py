@@ -1,5 +1,6 @@
 import pandas as pd
 import types
+from DataQuery import *
 
 class BackTester:
     def __init__(self, initialize, tradingAlgo):
@@ -42,31 +43,35 @@ class BackTester:
         date_univers = data.drop_duplicates(['date'])['date']
         # date_univers 정의 (데이터에 있는 일자를 중복제거 해서 event를 일으킬 일자 정의)
         for i in range(0, len(date_univers)):
-            current_day = date_univers.iloc[i]
+            current_time = date_univers.iloc[i]
             # 현재 일자 정의
-            current_data = data[data['date'] == current_day]
-            # 현재 일자에 해당하는 dataframe 필터
-            print('\ncurrent_data : {0}'.format(current_data))
 
-            self.tradingAlgo(self.context, current_data)
-            # tradingAlgo 실행 (tradingAlgo에 현재 일자로 필터된 dataframe을 인자로 넣어줌)
+            dataquery = DataQuery(data, current_time)
+            # DataQuery의 class 객체 생성(run 함수에 넣은 data 인자와 현재 시간을 인수로 넣어줌)
+
+            self.tradingAlgo(self.context, dataquery)
+            # tradingAlgo 실행 (tradingAlgo에 context 정보와 데이터를 조회할 수 있는 dataquery 객체를 인자로 넣어줌)
 
             cash_value = self.context.portfolio['cash']
             print('cash_value : {0}'.format(cash_value))
             stock_value = 0
             for symbol in self.context.symbols :
-                stock_price = current_data[current_data['symbol'] == symbol].price.values[0]
+                stock_price = dataquery.current_data(symbol, 'price')
+                # dataquery에서 현재 가격을 조회함
                 stock_amounts = self.context.portfolio['stock'][symbol]['amounts']
+                # context의 portfolio에서 해당 심볼에 해당하는 주식의 보유 주식 수를 가지고옴
                 stock_value += stock_price*stock_amounts
                 print('{0} : price   = {1}'.format(symbol, stock_price))
                 print('{0} : amounts = {1}'.format(symbol, stock_amounts))
                 print('{0} : sum     = {1}'.format(symbol, stock_value))
             portfolio_value = cash_value + stock_value
+            # portfolio_value는 현금 가치와 주식 가치를 합한 값
             print('portfolio_value : {0}'.format(portfolio_value))
             # portfolio_value 계산
 
-            s = pd.Series([current_day, portfolio_value], index=resultColumns)
+            s = pd.Series([current_time, portfolio_value], index=resultColumns)
             self.result = self.result.append(s, ignore_index=True)
+            # result 공간에 결과값 저장
 
         return self.result
 
