@@ -2,11 +2,12 @@ import datetime
 
 
 class DataQuery :
-    def __init__(self, data, current_time) :
+    def __init__(self, data, context) :
         self.data = data
-        self.current_time = current_time
-        # 실제 데이터 프레임(data 인자), 현재시간(current_time 인자)을 클래스 인자로 정의
+        self.current_time = context.current_time
+        # 실제 데이터 프레임(data 인자), 현재시간을(current_time 인자) 클래스 인자로 정의
         # data는 열이 'symbol', 'price', 그리고 사용자가 정의한 fators(여러개일수 있음)로 구성됨
+
 
     def current_data(self, symbols, factors) :
         # symbols와 factors는 스칼라 문자 또는 리스트 형태로 넣어줄 수 있음
