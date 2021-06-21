@@ -84,7 +84,7 @@ class BackTester:
                 starting_portfolio_value += self.context.account['deposit']
             # tradingAlgo 안에서 deposit()이 호출될 경우, starting_cash가 늘어나야하고, 그로인해 starting 평가액도 늘어야함
             # deposit이 증가하면 투자원금이 증가하는데, starting 금액에 편입안되면 그 금액만큼 수익으로 인식되어 수익률이 과대평가됨
-            # tradingAlgo 안에서 deposit()이 호출된 사실을 인식하려면, starting_deposit과 ending_deposit을 비교해야함
+            # tradingAlgo 안에서 deposit()이 호출된 사실을 인식하려면, starting_capital_base과 ending_capital_base를 비교해야함
             # (self.context.portfolio['cash']는 tradingAlgo에 order()가 호출될경우 인출이 발생하기 때문에 이미 왜곡되어 활용할수 없음)
 
             ending_cash=self.context.portfolio['cash']
