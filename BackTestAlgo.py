@@ -1,4 +1,5 @@
 import pandas as pd
+from sklearn.linear_model import LinearRegression
 import types
 from DataQuery import *
 from Calculator import *
@@ -99,6 +100,12 @@ class BackTester:
             rate_of_return = (ending_portfolio_value - capital_base) / capital_base
 
             portfolio_return = (ending_portfolio_value - starting_portfolio_value) / starting_portfolio_value
+
+            if bool(self.context.benchmark) :
+                reg = LinearRegression(fit_intercept=True)
+                x, y = dataquery.history(self.context.benchmark, ), self.result['ending_portfolio_value']
+                reg.fit(x, y)
+
 
             s = pd.Series([current_time, total_profit, rate_of_return, starting_cash, ending_cash,
                            starting_stock_value, ending_stock_value, starting_portfolio_value, ending_portfolio_value,

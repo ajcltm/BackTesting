@@ -6,11 +6,23 @@ from BackTestAlgo import *
 from Order import *
 from DataQuery import *
 from Record import *
+from AlphaBeta import *
 
 def my_init(context):
     context.symbols = ['APPL', 'NVDA']
+    # universe를 symbols로 정의(반드시 지정해야함)
+
+    set_benchmark(context, data, type='price')
+    # data는 칼럼이 [benchmark, price] 이나 [benchmark, return] 형식으로 넣어줘야함
+    # type은 'price' or 'return'으로 지정해줘야함. 지정 안하면 기본값으로 'price'로 진행
+
+    context.benchmark = ['SNP500']
+    # 벤치마크 대상을 benchmark로 정의(지정하지 않아도 됨)
     context.price = 'price'
+    # price로 사용할 칼럼 인덱스 이름을 알려줘야함(open, high, close 등의 인덱스를 price로 활용 가능함)
+    # 여기서 지정한 인덱스는 포트폴리오를 평가할 때 기본적으로 사용하는 지표임
     context.capital_base = 5000
+    # 투자원금을 설정함. 지정하지 않으면 기본값을 사용함
 
     context.hold = False
     context.i = 0
