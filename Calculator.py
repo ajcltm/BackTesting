@@ -26,7 +26,7 @@ def update_portfolio_deposit(context) :
 def calculate_portfolio_value(context, dataquery, price='price') :
     # 현 시점의 포트폴리오 평가액을 계산함(price는 'price'를 기본값으로 하지만, 'open', 'high' 등 다른 index로 평가할수도 있음)
     cash_value = context.portfolio['cash']
-    print('cash_value : {0}'.format(cash_value))
+
     stock_value = 0
     for symbol in context.symbols:
         context.portfolio['stock'][symbol]['price'] = dataquery.current_data(symbol, price)
@@ -35,12 +35,9 @@ def calculate_portfolio_value(context, dataquery, price='price') :
         stock_amounts = context.portfolio['stock'][symbol]['amounts']
         # context의 portfolio에서 해당 심볼에 해당하는 주식의 보유 주식 수를 가지고옴
         stock_value += stock_price * stock_amounts
-        print('{0} : price   = {1}'.format(symbol, stock_price))
-        print('{0} : amounts = {1}'.format(symbol, stock_amounts))
-        print('{0} : sum     = {1}'.format(symbol, stock_value))
+
     portfolio_value = cash_value + stock_value
     # portfolio_value는 현금 가치와 주식 가치를 합한 값
-    print('portfolio_value : {0}'.format(portfolio_value))
     # portfolio_value 계산
 
     return portfolio_value

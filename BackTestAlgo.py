@@ -1,12 +1,13 @@
 import pandas as pd
-from sklearn.linear_model import LinearRegression
+import numpy as np
 import types
 from DataQuery import *
 from Calculator import *
+from AlphaBeta import *
 
 class BackTester:
     def __init__(self, initialize, tradingAlgo):
-        print('Hello backtesting')
+        print('\nHello backtesting')
 
         self.context = types.SimpleNamespace()
         # context 네임스페이스 객체 생성
@@ -36,21 +37,32 @@ class BackTester:
         self.context.portfolio = portfolio
         # context에 portfolio 상태 공간 만들기( {'cash': %%, 'stock' : {'symbol':{'price':%%, 'amounts':%%}}} 형태)
 
+        benchmark = {'benchmark_symbols' : 0, 'benchmark_df' : 0, 'benchmark_class' : 0}
+        self.context.benchmark = benchmark
+
         self.context.record = {}
         self.context.record_on = False
         # context에 record 상태 공간 만들기, 녹화 스위치(record_on)는 껴놓은 상태로 저장
 
         self.tradingAlgo = tradingAlgo
 
-    def run(self, data):
+    def run(self, data, benchmark_data):
         # data는 'data', 'symbol', 'price_factor' 형태로 줘야함
 
         data['price'] = data[self.context.price]
         # data에 price 정보에 해당하는 열을 지정해줌
 
+        benchmark = AlphaBeta(self.context, benchmark_data, type='price')
+
+        self.context.benchmark['benchmark_class'] = benchmark
+
+        benchmark_symbols = self.context.benchmark['benchmark_symbols']
+
         resultColumns = ['date', 'total_profit', 'rate_of_return', 'starting_cash', 'ending_cash',
                          'starting_stock_value', 'ending_stock_value',
-                         'starting_portfolio_value', 'ending_portfolio_value', 'portfolio_return', 'capital_base']
+                         'starting_portfolio_value', 'ending_portfolio_value', 'portfolio_return', 'capital_base',
+                         'alpha', 'beta']
+
         self.result = pd.DataFrame(columns=resultColumns)
         # result 공간 dataframe 만들기 (열만 정의된 빈 dataframe)
 
@@ -101,15 +113,22 @@ class BackTester:
 
             portfolio_return = (ending_portfolio_value - starting_portfolio_value) / starting_portfolio_value
 
-            if bool(self.context.benchmark) :
-                reg = LinearRegression(fit_intercept=True)
-                x, y = dataquery.history(self.context.benchmark, ), self.result['ending_portfolio_value']
-                reg.fit(x, y)
+
+            y = np.append(self.result['portfolio_return'].values, [portfolio_return]).reshape(-1, 1)
+            print('y : \n{0}'.format(y))
+            y = np.delete(y, 0, 0)
+            print('x drop : \n{0}'.format(y))
+            benchmark_history = benchmark.benchmark_history(self.context, benchmark_symbols, 'return', i+1)
+            print('benchmark_history : \n{0}'.format(benchmark_history))
+            if i == 0:
+                alpha, beta = 0, 0
+            else :
+                alpha, beta = benchmark.get_alpha_beta(y)
 
 
             s = pd.Series([current_time, total_profit, rate_of_return, starting_cash, ending_cash,
                            starting_stock_value, ending_stock_value, starting_portfolio_value, ending_portfolio_value,
-                           portfolio_return, capital_base], index=resultColumns)
+                           portfolio_return, capital_base, alpha, beta], index=resultColumns)
             self.result = self.result.append(s, ignore_index=True)
             # result 데이터프레임 공간에 결과값 저장
 

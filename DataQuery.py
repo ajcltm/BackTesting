@@ -77,6 +77,6 @@ class DataQuery :
             else :
             # symbols와 factors 모두 스칼라 문자형태로 넣어준 것이라면
                 querydata = querydata[querydata['symbol']==symbols][factors]
-                # 해당 조건들에 해당하는 스칼라 값을 반환
+                # 해당 조건들에 해당하는 시리즈를 반환 (조회되는 date가 여럿이기 때문에 스칼라가 아닌 시리즈 형태로 반환)
 
         return querydata
