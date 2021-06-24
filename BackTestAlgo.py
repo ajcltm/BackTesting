@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from numpy import nan as NA
 import types
 from DataQuery import *
 from Calculator import *
@@ -46,22 +47,23 @@ class BackTester:
 
         self.tradingAlgo = tradingAlgo
 
-    def run(self, data, benchmark_data):
+    def run(self, data, benchmark_data=None):
         # data는 'data', 'symbol', 'price_factor' 형태로 줘야함
 
         data['price'] = data[self.context.price]
         # data에 price 정보에 해당하는 열을 지정해줌
 
-        benchmark = AlphaBeta(self.context, benchmark_data, type='price')
+        if isinstance(benchmark_data, pd.DataFrame):
+            benchmark = AlphaBeta(self.context, benchmark_data)
 
-        self.context.benchmark['benchmark_class'] = benchmark
+            self.context.benchmark['benchmark_class'] = benchmark
 
-        benchmark_symbols = self.context.benchmark['benchmark_symbols']
+            benchmark_symbols = self.context.benchmark['benchmark_symbols']
 
         resultColumns = ['date', 'total_profit', 'rate_of_return', 'starting_cash', 'ending_cash',
                          'starting_stock_value', 'ending_stock_value',
                          'starting_portfolio_value', 'ending_portfolio_value', 'portfolio_return', 'capital_base',
-                         'alpha', 'beta']
+                         'alpha'] + ['beta_{0}'.format(i) for i in benchmark_data['benchmark'].unique().tolist()]
 
         self.result = pd.DataFrame(columns=resultColumns)
         # result 공간 dataframe 만들기 (열만 정의된 빈 dataframe)
@@ -113,22 +115,23 @@ class BackTester:
 
             portfolio_return = (ending_portfolio_value - starting_portfolio_value) / starting_portfolio_value
 
-
-            y = np.append(self.result['portfolio_return'].values, [portfolio_return]).reshape(-1, 1)
-            print('y : \n{0}'.format(y))
-            y = np.delete(y, 0, 0)
-            print('x drop : \n{0}'.format(y))
-            benchmark_history = benchmark.benchmark_history(self.context, benchmark_symbols, 'return', i+1)
-            print('benchmark_history : \n{0}'.format(benchmark_history))
-            if i == 0:
-                alpha, beta = 0, 0
+            if isinstance(benchmark_data, pd.DataFrame):
+                y = np.append(self.result['portfolio_return'].values, [portfolio_return]).reshape(-1, 1)
+                print('y : \n{0}'.format(y))
+                y = np.delete(y, 0, 0)
+                print('y drop : \n{0}'.format(y))
+                benchmark_history = benchmark.benchmark_history(self.context, benchmark_symbols, 'return', i+1)
+                print('benchmark_history : \n{0}'.format(benchmark_history))
+                if i == 0:
+                    alpha, beta_list = NA, [NA for i in range(0 , len(benchmark_data['benchmark'].unique().tolist()))]
+                else :
+                    alpha, beta_list = benchmark.get_alpha_beta(y)
             else :
-                alpha, beta = benchmark.get_alpha_beta(y)
-
+                alpha, beta_list = NA, NA
 
             s = pd.Series([current_time, total_profit, rate_of_return, starting_cash, ending_cash,
                            starting_stock_value, ending_stock_value, starting_portfolio_value, ending_portfolio_value,
-                           portfolio_return, capital_base, alpha, beta], index=resultColumns)
+                           portfolio_return, capital_base, alpha] + beta_list, index=resultColumns)
             self.result = self.result.append(s, ignore_index=True)
             # result 데이터프레임 공간에 결과값 저장
 

@@ -41,10 +41,11 @@ def handle_data(context, data):
         nvda_price = data.current_data('NVDA', 'price')
         nvda_amounts = context.account['withdrawal']['NVDA']['amounts']
 
-        bench_price = context.benchmark['benchmark_class'].benchmark_history(context, context.benchmark['benchmark_symbols'], 'return', 1).values[0]
-        print('bench_price :{0} '.format(bench_price))
-        record(context, bench_price=bench_price, appl_price=appl_price, appl_amounts=appl_amounts,
-               nvda_price=nvda_price, nvda_amounts=nvda_amounts, action=context.action)
+        # bench1_return = context.benchmark['benchmark_class'].benchmark_history(context, context.benchmark['benchmark_symbols'][0], 'return', 1).values[0]
+        # bench2_return = context.benchmark['benchmark_class'].benchmark_history(context, context.benchmark['benchmark_symbols'][0], 'return', 1).values[0]
+        # print('bench_price :{0} '.format(bench_return))
+        # record(context, bench1_return=bench1_return,bench2_return=bench2_return, appl_price=appl_price, appl_amounts=appl_amounts,
+        #        nvda_price=nvda_price, nvda_amounts=nvda_amounts, action=context.action)
 
     else :
         order(context, ['APPL', 'NVDA'], [10, 10], [-20, -10])
@@ -56,10 +57,11 @@ def handle_data(context, data):
         appl_amounts = context.account['withdrawal']['APPL']['amounts']
         nvda_price = data.current_data('NVDA', 'price')
         nvda_amounts = context.account['withdrawal']['NVDA']['amounts']
-        bench_price = context.benchmark['benchmark_class'].benchmark_history(context, context.benchmark['benchmark_symbols'], 'return', 1).values[0]
-        record(context, bench_price=bench_price, appl_price=appl_price, appl_amounts=appl_amounts,
-               nvda_price=nvda_price, nvda_amounts=nvda_amounts, action=context.action)
-
+        # bench1_return = context.benchmark['benchmark_class'].benchmark_history(context, context.benchmark['benchmark_symbols'][0], 'return', 1).values[0]
+        # bench2_return = context.benchmark['benchmark_class'].benchmark_history(context, context.benchmark['benchmark_symbols'][0], 'return', 1).values[0]
+        # print('bench_price :{0} '.format(bench_return))
+        # record(context, bench1_return=bench1_return,bench2_return=bench2_return, appl_price=appl_price, appl_amounts=appl_amounts,
+        #        nvda_price=nvda_price, nvda_amounts=nvda_amounts, action=context.action)
 if __name__ == '__main__':
 
     price_list = [i for i in range(20, 30)]
@@ -71,7 +73,8 @@ if __name__ == '__main__':
     data = data[['date', 'symbol', 'price']]
 
     bench_price_list = [i for i in range(20, 30)]
-    benchmark = pd.DataFrame(data={'SNP500': bench_price_list}, index=date_list)
+    benchmark = pd.DataFrame(data={'SNP500': bench_price_list, 'kospi': bench_price_list}, index=date_list)
+    # benchmark = pd.DataFrame(data={'SNP500': bench_price_list}, index=date_list)
     benchmark = benchmark.unstack()
     benchmark = benchmark.reset_index()
     benchmark.columns = ['benchmark', 'date', 'price']

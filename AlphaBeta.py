@@ -5,7 +5,11 @@ from sklearn.linear_model import LinearRegression
 
 class AlphaBeta :
 
-    def __init__(self, context, benchmark_data, type='price'):
+    def __init__(self, context, benchmark_data):
+
+        type = 'price'
+        if 'return' in benchmark_data.columns :
+            type = 'return'
 
         benchmark_symbols = benchmark_data['benchmark'].unique().tolist()
 
@@ -25,6 +29,8 @@ class AlphaBeta :
         print('context.benchmarks symbols : {0}'.format(context.benchmark['benchmark_symbols']))
         context.benchmark['benchmark_data'] = benchmark_data
         print('context.benchmark_data : \n{0}'.format(context.benchmark['benchmark_data']))
+
+        self.benchmark_symbols = benchmark_symbols
 
         self.reg = LinearRegression()
 
@@ -71,12 +77,28 @@ class AlphaBeta :
         return querydata
 
     def get_alpha_beta(self, y):
-        x = self.querydata.values.reshape(-1,1)
-        x = np.delete(x, 0, 0)
-        print('x : \n{0}'.format(y))
+        benchmark_symbols=self.benchmark_symbols
+        if isinstance(benchmark_symbols, list):
+            data = []
+            for benchmark in benchmark_symbols:
+                data.append(self.querydata[self.querydata['benchmark'] == benchmark]['return'].reset_index(drop=True))
+            data = pd.concat(data, axis=1, join='outer')
+            x = data.values
+            x = np.delete(x, 0, 0)
+            print('x : \n{0}'.format(x))
+
+
+        else :
+            x = self.querydata.values.reshape(-1,1)
+            x = np.delete(x, 0, 0)
+            print('x : \n{0}'.format(x))
 
         alpha_beta = self.reg.fit(x, y)
         alpha = alpha_beta.intercept_[0]
-        beta = alpha_beta.coef_[0][0]
+        beta_list = alpha_beta.coef_[0].tolist()
 
-        return alpha, beta
+        print('alpha : \n{0}'.format(alpha))
+        print('beta_list : \n{0}'.format(beta_list))
+
+
+        return alpha, beta_list
