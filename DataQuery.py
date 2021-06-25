@@ -45,10 +45,16 @@ class DataQuery :
 
         return querydata
 
-    def history(self, symbols, factors, periods) :
+    def history(self, context, symbols, factors, periods) :
         # symbols와 factors는 스칼라 문자 또는 리스트 형태로 넣어줄 수 있음
 
-        time_list = [self.current_time - datetime.timedelta(days=x) for x in reversed(range(periods))]
+        date_univers = context.date_univers
+        current_time_index = date_univers[date_univers == context.current_time].index[0]
+        start = current_time_index + 1 - periods
+        if start < 0 :
+            start = 0
+        end = current_time_index + 1
+        time_list = [date for date in date_univers.iloc[start:end]]
         querydata = self.data[self.data['date'].isin(time_list)]
         # 조회시간들에 해당하는 데이터만 필터
 

@@ -71,6 +71,8 @@ class BackTester:
         date_univers = data.drop_duplicates(['date'])['date']
         # date_univers 정의 (데이터에 있는 일자를 중복제거 해서 event를 일으킬 일자 정의)
 
+        self.context.date_univers = date_univers
+
         ending_portfolio_value = self.context.portfolio['cash']
         # 기초평가액은 전날의 기말평가액임(첫날 이전의 기말평가액은 존재 하지 않으므로 초기 셋팅을 첫날 기초현금가로 셋팅해야함)
 

@@ -22,6 +22,7 @@ class AlphaBeta :
             for benchmark in benchmark_symbols :
                 df = benchmark_data[benchmark_data['benchmark']==benchmark]
                 df['return'] = df['price'].pct_change(1)
+                df['return'] = df['price'].pct_change(1)
                 dfs.append(df)
             benchmark_data = pd.concat(dfs)
 
@@ -38,7 +39,13 @@ class AlphaBeta :
 
     def benchmark_history(self, context, benchmarks, indice, periods):
         benchmark_data = context.benchmark['benchmark_data']
-        time_list = [context.current_time - datetime.timedelta(days=x) for x in reversed(range(periods))]
+        date_univers = context.date_univers
+        current_time_index = date_univers[date_univers == context.current_time].index[0]
+        start = current_time_index + 1 - periods
+        if start < 0 :
+            start = 0
+        end = current_time_index + 1
+        time_list = [date for date in date_univers.iloc[start:end]]
         print('periods : {0}'.format(periods))
         print('time_list : {0}'.format(time_list))
         querydata = benchmark_data[benchmark_data['date'].isin(time_list)]
@@ -96,6 +103,7 @@ class AlphaBeta :
         alpha_beta = self.reg.fit(x, y)
         alpha = alpha_beta.intercept_[0]
         beta_list = alpha_beta.coef_[0].tolist()
+        beta_list = [round(i,3) for i in beta_list]
 
         print('alpha : \n{0}'.format(alpha))
         print('beta_list : \n{0}'.format(beta_list))
