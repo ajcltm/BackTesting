@@ -60,10 +60,15 @@ class BackTester:
 
             benchmark_symbols = self.context.benchmark['benchmark_symbols']
 
+            beta_list = ['beta_{0}'.format(i) for i in benchmark_data['benchmark'].unique().tolist()]
+
+        else :
+            beta_list = ['beta']
+
         resultColumns = ['date', 'total_profit', 'rate_of_return', 'starting_cash', 'ending_cash',
                          'starting_stock_value', 'ending_stock_value',
                          'starting_portfolio_value', 'ending_portfolio_value', 'portfolio_return', 'capital_base',
-                         'alpha'] + ['beta_{0}'.format(i) for i in benchmark_data['benchmark'].unique().tolist()]
+                         'alpha'] + beta_list
 
         self.result = pd.DataFrame(columns=resultColumns)
         # result 공간 dataframe 만들기 (열만 정의된 빈 dataframe)
@@ -129,7 +134,7 @@ class BackTester:
                 else :
                     alpha, beta_list = benchmark.get_alpha_beta(y)
             else :
-                alpha, beta_list = NA, NA
+                alpha, beta_list = NA, [NA]
 
             s = pd.Series([current_time, total_profit, rate_of_return, starting_cash, ending_cash,
                            starting_stock_value, ending_stock_value, starting_portfolio_value, ending_portfolio_value,
@@ -137,6 +142,9 @@ class BackTester:
             self.result = self.result.append(s, ignore_index=True)
             # result 데이터프레임 공간에 결과값 저장
 
+            for symbol in self.context.symbols:
+                self.context.account['withdrawal'][symbol] = {'unitPrice': 0, 'amounts': 0}
+            self.context.account['deposit'] = 0
 
         if bool(self.context.record):
         # record된 것이 있다면

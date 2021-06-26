@@ -8,43 +8,7 @@ from Order import *
 from DataQuery import *
 from Record import *
 from AlphaBeta import *
-
-def my_init(context):
-    context.symbols = ['NVDA']
-    # universe를 symbols로 정의(반드시 지정해야함)
-
-    context.price = 'price'
-    # price로 사용할 칼럼 인덱스 이름을 알려줘야함(open, high, close 등의 인덱스를 price로 활용 가능함)
-    # 여기서 지정한 인덱스는 포트폴리오를 평가할 때 기본적으로 사용하는 지표임
-
-    context.capital_base = 5000
-    # 투자원금을 설정함. 지정하지 않으면 기본값을 사용함
-
-    context.i = 0
-
-def handle_data(context, data):
-    context.i += 1
-    print('\n')
-    print(data.current_time)
-
-    nvda_price = data.current_data('NVDA', 'price')
-
-
-    if context.i ==1 :
-        order(context, ['NVDA'], [nvda_price], [int(context.capital_base/nvda_price)])
-
-    nvda_amounts = context.account['withdrawal']['NVDA']['amounts']
-
-    bench1_return = context.benchmark['benchmark_class'].benchmark_history(context, context.benchmark['benchmark_symbols'][0], 'return', 1).values[0]
-    bench2_return = \
-    context.benchmark['benchmark_class'].benchmark_history(context, context.benchmark['benchmark_symbols'][1], 'return',
-                                                           1).values[0]
-
-    mena_price = data.history(context, 'NVDA', 'price', 5).mean()
-
-    print('bench_price :{0} '.format(bench1_return))
-    record(context, bench1_return=bench1_return,bench2_return=bench2_return, nvda_price=nvda_price, nvda_amounts=nvda_amounts, mena_price=mena_price)
-
+from setting import *
 
 if __name__ == '__main__':
 
@@ -70,12 +34,24 @@ if __name__ == '__main__':
     start_date = datetime.datetime(2021, 1, 5)
     end_date = datetime.datetime(2021, 6, 25)
 
-    data = web.DataReader('NVDA', 'yahoo', start_date, end_date)
-    data['date'] = data.index
-    data = data.reset_index(drop=True)
-    data['price'] = data['Adj Close']
-    data['symbol'] = 'NVDA'
-    data = data[['date', 'symbol', 'price']]
+    start_date_n = datetime.datetime(2021, 1, 1)
+    start_date_a = datetime.datetime(2021, 4, 9)
+    end_date = datetime.datetime(2021, 6, 25)
+
+    NVDA = web.DataReader('NVDA', 'yahoo', start_date_n, end_date)
+    ARVL = web.DataReader('ARVL', 'yahoo', start_date_a, end_date)
+
+    NVDA['date'] = NVDA.index
+    NVDA = NVDA.reset_index(drop=True)
+    NVDA['symbol'] = 'NVDA'
+    NVDA['price'] = NVDA['Adj Close']
+    NVDA = NVDA[['date', 'symbol', 'price']]
+    ARVL['date'] = ARVL.index
+    ARVL = ARVL.reset_index(drop=True)
+    ARVL['symbol'] = 'ARVL'
+    ARVL['price'] = ARVL['Adj Close']
+    ARVL = ARVL[['date', 'symbol', 'price']]
+    data = pd.concat([NVDA, ARVL])
 
     benchmark_1 = web.DataReader('^GSPC', 'yahoo', start_date, end_date)
     benchmark_1['date'] = benchmark_1.index
@@ -95,8 +71,8 @@ if __name__ == '__main__':
 
     tester = BackTester(initialize=my_init, tradingAlgo=handle_data)
 
-    result = tester.run(data, benchmark)
+    result = tester.run(data)
 
-    print('\nresult :\n{0} '.format(result['beta_SP500']))
+    # print('\nresult :\n{0} '.format(result['beta_SP500']))
 
     result.to_csv('C:/Users/ajcltm/Desktop/backtesting/result.csv')

@@ -28,7 +28,11 @@ def calculate_portfolio_value(context, dataquery, price='price') :
     cash_value = context.portfolio['cash']
 
     stock_value = 0
-    for symbol in context.symbols:
+
+    price_data = dataquery.current_data(context.symbols, [price])
+    exited_symbols = price_data['symbol'].unique().tolist()
+
+    for symbol in exited_symbols:
         context.portfolio['stock'][symbol]['price'] = dataquery.current_data(symbol, price)
         stock_price = context.portfolio['stock'][symbol]['price']
         # dataquery에서 현재 가격을 조회함
