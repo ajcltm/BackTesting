@@ -9,6 +9,7 @@ from DataQuery import *
 from Record import *
 from AlphaBeta import *
 from setting import *
+from Preprocessing import *
 
 if __name__ == '__main__':
 
@@ -30,10 +31,6 @@ if __name__ == '__main__':
     # print('benchmark :\n{0} '.format(benchmark))
 
 
-
-    start_date = datetime.datetime(2021, 1, 5)
-    end_date = datetime.datetime(2021, 6, 25)
-
     start_date_n = datetime.datetime(2021, 1, 1)
     start_date_a = datetime.datetime(2021, 4, 9)
     end_date = datetime.datetime(2021, 6, 25)
@@ -53,6 +50,9 @@ if __name__ == '__main__':
     ARVL = ARVL[['date', 'symbol', 'price']]
     data = pd.concat([NVDA, ARVL])
 
+    start_date = datetime.datetime(2021, 1, 1)
+    end_date = datetime.datetime(2021, 6, 25)
+
     benchmark_1 = web.DataReader('^GSPC', 'yahoo', start_date, end_date)
     benchmark_1['date'] = benchmark_1.index
     benchmark_1 = benchmark_1.reset_index(drop=True)
@@ -69,10 +69,10 @@ if __name__ == '__main__':
 
     benchmark = pd.concat([benchmark_1, benchmark_2])
 
+    checking_data_contidion(my_init, data, benchmark)
+
     tester = BackTester(initialize=my_init, tradingAlgo=handle_data)
 
-    result = tester.run(data)
-
-    # print('\nresult :\n{0} '.format(result['beta_SP500']))
+    result = tester.run(data, benchmark)
 
     result.to_csv('C:/Users/ajcltm/Desktop/backtesting/result.csv')

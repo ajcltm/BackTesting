@@ -35,6 +35,7 @@ def handle_data(context, data):
     if data.current_time > datetime.datetime(2021, 4, 9) :
         arvl_price = data.current_data('ARVL', 'price')
         if data.current_time == datetime.datetime(2021, 6, 21) :
+            deposit(context, 5000)
             order(context, ['ARVL'], [arvl_price], [int(context.portfolio['cash']/arvl_price)])
         arvl_amounts = context.account['withdrawal']['ARVL']['amounts']
     else :

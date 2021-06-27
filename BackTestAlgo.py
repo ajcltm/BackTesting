@@ -54,22 +54,24 @@ class BackTester:
         # data에 price 정보에 해당하는 열을 지정해줌
 
         if isinstance(benchmark_data, pd.DataFrame):
+        # benchmark_data가 입력되었는지 확인함
             benchmark = AlphaBeta(self.context, benchmark_data)
-
+            # benchmark_data가 있으면 AlphaBeta 클래스 생성
             self.context.benchmark['benchmark_class'] = benchmark
-
+            # 클래스 객체를 context에 저장(main 등에서 클래스 객처를 별도로 만들지 않고 데이터 조회등에 활용할 수 있음)
             benchmark_symbols = self.context.benchmark['benchmark_symbols']
-
+            # AlphaBeta 클래스 생성 시 init에서 benchmark_data에 있는 benchmakrk symbol를 정리하여 context에 저장해 놓은 것을 꺼내어 씀
             beta_list = ['beta_{0}'.format(i) for i in benchmark_data['benchmark'].unique().tolist()]
-
+            # benchmark 데이터의 symbol 개수 만큼 beta 변수를 만들고 list 형태로 지정함
         else :
             beta_list = ['beta']
+            # benchmakrk data가 없으면 beta 변수를 하나만 만듬
 
         resultColumns = ['date', 'total_profit', 'rate_of_return', 'starting_cash', 'ending_cash',
                          'starting_stock_value', 'ending_stock_value',
                          'starting_portfolio_value', 'ending_portfolio_value', 'portfolio_return', 'capital_base',
                          'alpha'] + beta_list
-
+        # result의 컬럼을 미리 만듬(beta_list안에 개수는 가변적임)
         self.result = pd.DataFrame(columns=resultColumns)
         # result 공간 dataframe 만들기 (열만 정의된 빈 dataframe)
 
@@ -77,6 +79,7 @@ class BackTester:
         # date_univers 정의 (데이터에 있는 일자를 중복제거 해서 event를 일으킬 일자 정의)
 
         self.context.date_univers = date_univers
+        # date_univers를 context에 저장함(DataQuery와 AlphaBeta에서 history 함수 호출할때 사용)
 
         ending_portfolio_value = self.context.portfolio['cash']
         # 기초평가액은 전날의 기말평가액임(첫날 이전의 기말평가액은 존재 하지 않으므로 초기 셋팅을 첫날 기초현금가로 셋팅해야함)
@@ -124,17 +127,22 @@ class BackTester:
 
             if isinstance(benchmark_data, pd.DataFrame):
                 y = np.append(self.result['portfolio_return'].values, [portfolio_return]).reshape(-1, 1)
+                # 전날 result의 portfolio_return에 오늘 portfolio_return 값을 추가하고, 시리즈를 2차원 배열로 변환함
                 print('y : \n{0}'.format(y))
                 y = np.delete(y, 0, 0)
+                # 첫날의 데이터는 삭제해줌(benchmark 수익률은 두번째날 부터 존재하기 때문에 result 데이터도 갯수를 맞추기 위함)
                 print('y drop : \n{0}'.format(y))
                 benchmark_history = benchmark.benchmark_history(self.context, benchmark_symbols, 'return', i+1)
                 print('benchmark_history : \n{0}'.format(benchmark_history))
                 if i == 0:
                     alpha, beta_list = NA, [NA for i in range(0 , len(benchmark_data['benchmark'].unique().tolist()))]
+                    # 첫날은 alpha, beta를 모두 NA 값으로 만듬(beta는 benchmark 갯수 만큼 NA 만듬)
                 else :
                     alpha, beta_list = benchmark.get_alpha_beta(y)
+                    # 첫날이 아니면 result의 portfolio return을 benchmark 객체의 get_alpha_beta 메서드의 인자로 넣어서 alpha, beta 값을 계산함
             else :
                 alpha, beta_list = NA, [NA]
+                # benchmarkt data가 없으면 alpha, beta 모두 NA로 설정함(beta는 리스트 형태로 넣어줌)
 
             s = pd.Series([current_time, total_profit, rate_of_return, starting_cash, ending_cash,
                            starting_stock_value, ending_stock_value, starting_portfolio_value, ending_portfolio_value,
@@ -145,6 +153,7 @@ class BackTester:
             for symbol in self.context.symbols:
                 self.context.account['withdrawal'][symbol] = {'unitPrice': 0, 'amounts': 0}
             self.context.account['deposit'] = 0
+            # 하루가 끝나면 account의 withdrawal과 deposit을 0으로 초기화함
 
         if bool(self.context.record):
         # record된 것이 있다면
@@ -152,5 +161,3 @@ class BackTester:
             # date 칼럼을 기준으로 result 데이터프레임과 record 데이터프레임 병합(없는 값은 nan 처리)
 
         return self.result
-
-
