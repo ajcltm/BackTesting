@@ -49,12 +49,18 @@ class DataQuery :
         # symbols와 factors는 스칼라 문자 또는 리스트 형태로 넣어줄 수 있음
 
         date_univers = context.date_univers
+        # context에 저장된 date_univers를 가지고옴
         current_time_index = date_univers[date_univers == context.current_time].index[0]
+        # date_univers를 이용해서 현재 시간의 인덱스를 가지고옴
         start = current_time_index + 1 - periods
+        # date_univers에서 조회를 시작하는 날짜의 인덱스는 마지막 날짜(current_time_index + 1)에서 조회기간(periods)를 뺀 값
         if start < 0 :
             start = 0
+            # 사용자가 실수 등으로 너무 긴 조회기간을 설정해버려서 index가 0보다 작으면 0으로 설정(조회할 수 있는 가장 먼 시간을 반환)
         end = current_time_index + 1
+        # 조회하는 마지막 날짜를 지정(+1을 하는 이유는 밑에 iloc에 넣었을 때 예를 들어 10을 넣으면 9까지 조회하기 때문)
         time_list = [date for date in date_univers.iloc[start:end]]
+        # 조회하고자하는 날짜 리스트를 생성
         querydata = self.data[self.data['date'].isin(time_list)]
         # 조회시간들에 해당하는 데이터만 필터
 

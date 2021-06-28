@@ -47,7 +47,6 @@ class AlphaBeta :
         end = current_time_index + 1
         time_list = [date for date in date_univers.iloc[start:end]]
         print('periods : {0}'.format(periods))
-        print('time_list : {0}'.format(time_list))
         querydata = benchmark_data[benchmark_data['date'].isin(time_list)]
         # 조회시간들에 해당하는 데이터만 필터
         print('querydata : \n{0}'.format(querydata))

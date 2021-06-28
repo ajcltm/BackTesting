@@ -2,74 +2,103 @@ import pandas as pd
 import numpy as np
 import datetime
 import types
-import pandas_datareader as web
+import pandas_datareader as pdr
 from BackTestAlgo import *
 from Order import *
 from DataQuery import *
 from Record import *
 from AlphaBeta import *
-from setting import *
 from Preprocessing import *
+
+def my_init(context):
+    context.symbols = ['MRNA', 'NVDA', 'AMZN', 'ARVL']
+    # universe를 symbols로 정의(반드시 지정해야함)
+
+    context.price = 'Adj Close'
+    # price로 사용할 칼럼 인덱스 이름을 알려줘야함(open, high, close 등의 인덱스를 price로 활용 가능함)
+    # 여기서 지정한 인덱스는 포트폴리오를 평가할 때 기본적으로 사용하는 지표임
+
+    context.capital_base = 0
+    # 투자원금을 설정함. 지정하지 않으면 기본값을 사용함
+
+    context.i = 0
+
+def handle_data(context, data):
+    context.i += 1
+    print('\n')
+    print(data.current_time)
+
+    order_schedule = pd.read_csv("C:/Users/ajcltm/Desktop/ordr_schedule.csv")
+    order_schedule['date'] = pd.to_datetime(order_schedule['date'], format='%Y-%m-%d')
+    order_schedule = order_schedule[['date', 'symbol', 'price', 'amounts']]
+
+    for i in range(0, len(order_schedule)) :
+        if data.current_time == order_schedule.loc[i, 'date']:
+            symbol = order_schedule.loc[i, 'symbol']
+            price = order_schedule.loc[i, 'price']
+            amounts = order_schedule.loc[i, 'amounts']
+            deposit(context, price*amounts)
+            order(context, [symbol], [price], [amounts])
+
+    mrna_price = data.current_data('MRNA', 'price')
+    mrna_amounts = context.portfolio['stock']['MRNA']['amounts']
+    nvda_price = data.current_data('NVDA', 'price')
+    nvda_amounts = context.portfolio['stock']['NVDA']['amounts']
+    amzn_price = data.current_data('AMZN', 'price')
+    amzn_amounts = context.portfolio['stock']['AMZN']['amounts']
+    arvl_price = data.current_data('ARVL', 'price')
+    arvl_amounts = context.portfolio['stock']['ARVL']['amounts']
+
+    # bench1_return = context.benchmark['benchmark_class'].benchmark_history(context, context.benchmark['benchmark_symbols'][0], 'return', 1).values[0]
+    # bench2_return = \
+    # context.benchmark['benchmark_class'].benchmark_history(context, context.benchmark['benchmark_symbols'][1], 'return',1).values[0]
+
+    record(context, mrna_price=mrna_price, mrna_amounts=mrna_amounts, nvda_price=nvda_price, nvda_amounts=nvda_amounts, amzn_price=amzn_price, amzn_amounts = amzn_amounts, arvl_price=arvl_price, arvl_amounts = arvl_amounts)
 
 if __name__ == '__main__':
 
-    # price_list = [i for i in range(20, 30)]
-    # date_list = [datetime.datetime(2021, 1, i + 1) for i in range(0, 10)]
-    # data = pd.DataFrame(data={'NVDA': price_list, 'APPL': price_list}, index=date_list)
-    # data = data.unstack()
-    # data = data.reset_index()
-    # data.columns = ['symbol', 'date', 'price']
-    # data = data[['date', 'symbol', 'price']]
-    #
-    # bench_price_list = [i for i in range(20, 30)]
-    # benchmark = pd.DataFrame(data={'SNP500': bench_price_list, 'kospi': bench_price_list}, index=date_list)
-    # # benchmark = pd.DataFrame(data={'SNP500': bench_price_list}, index=date_list)
-    # benchmark = benchmark.unstack()
-    # benchmark = benchmark.reset_index()
-    # benchmark.columns = ['benchmark', 'date', 'price']
-    # benchmark = benchmark[['date', 'benchmark', 'price']]
-    # print('benchmark :\n{0} '.format(benchmark))
+    s_date = datetime.datetime(2020, 9, 2)
+    e_date = datetime.datetime(2021, 6, 28)
+
+    mrna = pdr.DataReader('MRNA', 'yahoo', s_date, e_date)
+    nvda = pdr.DataReader('NVDA', 'yahoo', s_date, e_date)
+    amzn = pdr.DataReader('AMZN', 'yahoo', s_date, e_date)
+    arvl = pdr.DataReader('ARVL', 'yahoo', s_date, e_date)
+
+    mrna['date'] = mrna.index
+    mrna = mrna.reset_index(drop=True)
+    mrna['symbol'] = 'MRNA'
+    mrna = mrna[['date', 'symbol', 'Adj Close']]
+
+    nvda['date'] = nvda.index
+    nvda = nvda.reset_index(drop=True)
+    nvda['symbol'] = 'NVDA'
+    nvda = nvda[['date', 'symbol', 'Adj Close']]
+
+    amzn['date'] = amzn.index
+    amzn = amzn.reset_index(drop=True)
+    amzn['symbol'] = 'AMZN'
+    amzn = amzn[['date', 'symbol', 'Adj Close']]
+
+    arvl['date'] = arvl.index
+    arvl = arvl.reset_index(drop=True)
+    arvl['symbol'] = 'ARVL'
+    arvl = arvl[['date', 'symbol', 'Adj Close']]
+
+    data = pd.concat([mrna, nvda, amzn, arvl])
 
 
-    start_date_n = datetime.datetime(2021, 1, 1)
-    start_date_a = datetime.datetime(2021, 4, 9)
-    end_date = datetime.datetime(2021, 6, 25)
-
-    NVDA = web.DataReader('NVDA', 'yahoo', start_date_n, end_date)
-    ARVL = web.DataReader('ARVL', 'yahoo', start_date_a, end_date)
-
-    NVDA['date'] = NVDA.index
-    NVDA = NVDA.reset_index(drop=True)
-    NVDA['symbol'] = 'NVDA'
-    NVDA['price'] = NVDA['Adj Close']
-    NVDA = NVDA[['date', 'symbol', 'price']]
-    ARVL['date'] = ARVL.index
-    ARVL = ARVL.reset_index(drop=True)
-    ARVL['symbol'] = 'ARVL'
-    ARVL['price'] = ARVL['Adj Close']
-    ARVL = ARVL[['date', 'symbol', 'price']]
-    data = pd.concat([NVDA, ARVL])
-
-    start_date = datetime.datetime(2021, 1, 1)
-    end_date = datetime.datetime(2021, 6, 25)
-
-    benchmark_1 = web.DataReader('^GSPC', 'yahoo', start_date, end_date)
-    benchmark_1['date'] = benchmark_1.index
-    benchmark_1 = benchmark_1.reset_index(drop=True)
-    benchmark_1['price'] = benchmark_1['Adj Close']
-    benchmark_1['benchmark'] = 'SP500'
-    benchmark_1 = benchmark_1[['date', 'benchmark', 'price']]
-
-    benchmark_2 = web.DataReader('^DJI', 'yahoo', start_date, end_date)
-    benchmark_2['date'] = benchmark_2.index
-    benchmark_2 = benchmark_2.reset_index(drop=True)
-    benchmark_2['price'] = benchmark_2['Adj Close']
-    benchmark_2['benchmark'] = 'KOSPI'
-    benchmark_2 = benchmark_2[['date', 'benchmark', 'price']]
-
-    benchmark = pd.concat([benchmark_1, benchmark_2])
+    start_date = datetime.datetime(2020, 9, 2)
+    end_date = datetime.datetime(2021, 6, 28)
+    benchmark = pdr.DataReader('^GSPC', 'yahoo', start_date, end_date)
+    benchmark['date'] = benchmark.index
+    benchmark = benchmark.reset_index(drop=True)
+    benchmark['price'] = benchmark['Adj Close']
+    benchmark['benchmark'] = 'SP500'
+    benchmark = benchmark[['date', 'benchmark', 'price']]
 
     checking_data_contidion(my_init, data, benchmark)
+
 
     tester = BackTester(initialize=my_init, tradingAlgo=handle_data)
 
