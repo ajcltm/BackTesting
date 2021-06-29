@@ -47,8 +47,10 @@ class BackTester:
 
         self.tradingAlgo = tradingAlgo
 
-    def run(self, data, benchmark_data=None):
+    def run(self, data, benchmark_data=None, free_risk_data=None):
         # data는 'data', 'symbol', 'price_factor' 형태로 줘야함
+        # benchmark_data 디폴트값은 none이며, data를 넣어줄때는 columns = [date, benchmark, price] 또는 [date, benchmark, return] 형식으로 줘야함
+        # free_risk_data는 데이터프레임 형태로 넣어줄수 있음 (return 값으로 넣어야함, price아님)
 
         data['price'] = data[self.context.price]
         # data에 price 정보에 해당하는 열을 지정해줌
@@ -105,8 +107,8 @@ class BackTester:
             # tradingAlgo 실행 (tradingAlgo에 context 정보와 데이터를 조회할 수 있는 dataquery 객체를 인자로 넣어줌)
             ending_capital_base = self.context.capital_base
             if starting_capital_base < ending_capital_base :
-                starting_cash += self.context.account['deposit']
-                starting_portfolio_value += self.context.account['deposit']
+                starting_cash += ending_capital_base - starting_capital_base
+                starting_portfolio_value += ending_capital_base - starting_capital_base
             # tradingAlgo 안에서 deposit()이 호출될 경우, starting_cash가 늘어나야하고, 그로인해 starting 평가액도 늘어야함
             # deposit이 증가하면 투자원금이 증가하는데, starting 금액에 편입안되면 그 금액만큼 수익으로 인식되어 수익률이 과대평가됨
             # tradingAlgo 안에서 deposit()이 호출된 사실을 인식하려면, starting_capital_base과 ending_capital_base를 비교해야함
@@ -129,6 +131,8 @@ class BackTester:
                 y = np.append(self.result['portfolio_return'].values, [portfolio_return]).reshape(-1, 1)
                 # 전날 result의 portfolio_return에 오늘 portfolio_return 값을 추가하고, 시리즈를 2차원 배열로 변환함
                 print('y : \n{0}'.format(y))
+                if isinstance(free_risk_data, pd.DataFrame):
+                    y = y - free_risk_data.iloc[:i+1]['return'].values.reshape(-1, 1)
                 y = np.delete(y, 0, 0)
                 # 첫날의 데이터는 삭제해줌(benchmark 수익률은 두번째날 부터 존재하기 때문에 result 데이터도 갯수를 맞추기 위함)
                 print('y drop : \n{0}'.format(y))

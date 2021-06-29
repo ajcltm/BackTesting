@@ -37,11 +37,11 @@ def order(context, symbols, unitPrice, amounts) :
             context.account['withdrawal'][symbols]['amounts'] = amounts
             # context의 account 딕셔너리안에 있는 해당 심볼 주식의 amounts에 체결 수량을 저장
 
-    for symbol in context.symbols :
+    for symbol in symbols :
         withdrawal = context.account['withdrawal'][symbol]['unitPrice'] * context.account['withdrawal'][symbol]['amounts']
         context.account['balance'] -= withdrawal
 
-    update_portfolio_withdrawal(context)
+    update_portfolio_withdrawal(context, symbols)
     # context의 portfolio 딕셔너리안에 있는 해당 심볼 주식의 amounts에 체결 수량을 추가(누적)하여 저장
 
     return context

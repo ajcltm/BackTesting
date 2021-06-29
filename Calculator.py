@@ -1,7 +1,7 @@
 
-def update_portfolio_withdrawal(context) :
+def update_portfolio_withdrawal(context, symbols) :
 
-    for symbol in context.symbols :
+    for symbol in symbols :
         context.portfolio['stock'][symbol]['amounts'] +=  context.account['withdrawal'][symbol]['amounts']
         # context의 portfolio 딕셔너리안에 있는 해당 심볼 주식의 amounts에 체결 수량을 추가(누적)하여 저장
 

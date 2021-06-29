@@ -99,6 +99,8 @@ class AlphaBeta :
             x = np.delete(x, 0, 0)
             print('x : \n{0}'.format(x))
 
+
+
         alpha_beta = self.reg.fit(x, y)
         alpha = alpha_beta.intercept_[0]
         beta_list = alpha_beta.coef_[0].tolist()
