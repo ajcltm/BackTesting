@@ -27,9 +27,9 @@ class AlphaBeta :
             benchmark_data = pd.concat(dfs)
 
         context.benchmark['benchmark_symbols'] = benchmark_symbols
-        print('context.benchmarks symbols : {0}'.format(context.benchmark['benchmark_symbols']))
+        # print('context.benchmarks symbols : {0}'.format(context.benchmark['benchmark_symbols']))
         context.benchmark['benchmark_data'] = benchmark_data
-        print('context.benchmark_data : \n{0}'.format(context.benchmark['benchmark_data']))
+        # print('context.benchmark_data : \n{0}'.format(context.benchmark['benchmark_data']))
 
         self.benchmark_symbols = benchmark_symbols
 
@@ -49,7 +49,7 @@ class AlphaBeta :
         print('periods : {0}'.format(periods))
         querydata = benchmark_data[benchmark_data['date'].isin(time_list)]
         # 조회시간들에 해당하는 데이터만 필터
-        print('querydata : \n{0}'.format(querydata))
+        # print('querydata : \n{0}'.format(querydata))
 
         if isinstance(benchmarks, list):
             if isinstance(indice, list):
@@ -91,13 +91,13 @@ class AlphaBeta :
             data = pd.concat(data, axis=1, join='outer')
             x = data.values
             x = np.delete(x, 0, 0)
-            print('x : \n{0}'.format(x))
+            # print('x : \n{0}'.format(x))
 
 
         else :
             x = self.querydata.values.reshape(-1,1)
             x = np.delete(x, 0, 0)
-            print('x : \n{0}'.format(x))
+            # print('x : \n{0}'.format(x))
 
 
 

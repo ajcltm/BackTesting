@@ -1,10 +1,11 @@
-import pandas as pd
-import numpy as np
-from numpy import nan as NA
 import types
-from DataQuery import *
-from Calculator import *
+
+from numpy import nan as NA
+
 from AlphaBeta import *
+from Calculator import *
+from DataQuery import *
+
 
 class BackTester:
     def __init__(self, initialize, tradingAlgo):
@@ -69,10 +70,9 @@ class BackTester:
             beta_list = ['beta']
             # benchmakrk data가 없으면 beta 변수를 하나만 만듬
 
-        resultColumns = ['date', 'total_profit', 'rate_of_return', 'starting_cash', 'ending_cash',
-                         'starting_stock_value', 'ending_stock_value',
-                         'starting_portfolio_value', 'ending_portfolio_value', 'portfolio_return', 'capital_base',
-                         'alpha'] + beta_list
+        resultColumns = ['date', 'capital_base', 'starting_cash', 'ending_cash',
+                         'starting_stock_value', 'ending_stock_value', 'starting_portfolio_value', 'ending_portfolio_value',
+                         'portfolio_return','annualized_return', 'cumulative_return', 'total_profit', 'alpha'] + beta_list
         # result의 컬럼을 미리 만듬(beta_list안에 개수는 가변적임)
         self.result = pd.DataFrame(columns=resultColumns)
         # result 공간 dataframe 만들기 (열만 정의된 빈 dataframe)
@@ -123,21 +123,28 @@ class BackTester:
             # 투자원금은 deposit()이 생길때마다 누적하여 계산되어 있음
 
             total_profit = ending_portfolio_value - capital_base
-            rate_of_return = (ending_portfolio_value - capital_base) / capital_base
+            cumulative_return = (ending_portfolio_value - capital_base) / capital_base
 
             portfolio_return = (ending_portfolio_value - starting_portfolio_value) / starting_portfolio_value
+            if np.isnan(portfolio_return) :
+                portfolio_return=0
+            y = np.append(self.result['portfolio_return'].values, [portfolio_return]).reshape(-1, 1)
+
+            # 전날 result의 portfolio_return에 오늘 portfolio_return 값을 추가하고, 시리즈를 2차원 배열로 변환함
+            annualized_return = np.prod(y+1)**(252/(i+1))-1
 
             if isinstance(benchmark_data, pd.DataFrame):
-                y = np.append(self.result['portfolio_return'].values, [portfolio_return]).reshape(-1, 1)
+                # y = np.append(self.result['portfolio_return'].values, [portfolio_return]).reshape(-1, 1)
                 # 전날 result의 portfolio_return에 오늘 portfolio_return 값을 추가하고, 시리즈를 2차원 배열로 변환함
-                print('y : \n{0}'.format(y))
+
                 if isinstance(free_risk_data, pd.DataFrame):
                     y = y - free_risk_data.iloc[:i+1]['return'].values.reshape(-1, 1)
+                    # print('y : \n{0}'.format(y))
                 y = np.delete(y, 0, 0)
                 # 첫날의 데이터는 삭제해줌(benchmark 수익률은 두번째날 부터 존재하기 때문에 result 데이터도 갯수를 맞추기 위함)
-                print('y drop : \n{0}'.format(y))
+                # print('y drop : \n{0}'.format(y))
                 benchmark_history = benchmark.benchmark_history(self.context, benchmark_symbols, 'return', i+1)
-                print('benchmark_history : \n{0}'.format(benchmark_history))
+                # print('benchmark_history : \n{0}'.format(benchmark_history))
                 if i == 0:
                     alpha, beta_list = NA, [NA for i in range(0 , len(benchmark_data['benchmark'].unique().tolist()))]
                     # 첫날은 alpha, beta를 모두 NA 값으로 만듬(beta는 benchmark 갯수 만큼 NA 만듬)
@@ -148,9 +155,9 @@ class BackTester:
                 alpha, beta_list = NA, [NA]
                 # benchmarkt data가 없으면 alpha, beta 모두 NA로 설정함(beta는 리스트 형태로 넣어줌)
 
-            s = pd.Series([current_time, total_profit, rate_of_return, starting_cash, ending_cash,
+            s = pd.Series([current_time, capital_base, starting_cash, ending_cash,
                            starting_stock_value, ending_stock_value, starting_portfolio_value, ending_portfolio_value,
-                           portfolio_return, capital_base, alpha] + beta_list, index=resultColumns)
+                           portfolio_return, annualized_return, cumulative_return, total_profit, alpha] + beta_list, index=resultColumns)
             self.result = self.result.append(s, ignore_index=True)
             # result 데이터프레임 공간에 결과값 저장
 

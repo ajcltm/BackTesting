@@ -39,7 +39,9 @@ def order(context, symbols, unitPrice, amounts) :
 
     for symbol in symbols :
         withdrawal = context.account['withdrawal'][symbol]['unitPrice'] * context.account['withdrawal'][symbol]['amounts']
+        print('withrawal : {}'.format(withdrawal))
         context.account['balance'] -= withdrawal
+        print('balance by withrawal: {}'.format(context.account['balance']))
 
     update_portfolio_withdrawal(context, symbols)
     # context의 portfolio 딕셔너리안에 있는 해당 심볼 주식의 amounts에 체결 수량을 추가(누적)하여 저장
@@ -51,6 +53,7 @@ def deposit(context, dollars) :
     context.account['deposit'] = dollars
     # dollar 만큼을 입금하여 계좌(account) 정보에 저장
     context.account['balance'] += context.account['deposit']
+    print('balance by deposit : {}'.format(context.account['balance']))
 
     context.capital_base += context.account['deposit']
 
