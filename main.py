@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 import datetime
 import types
 import pandas_datareader as pdr
@@ -21,6 +22,9 @@ def my_init(context):
     context.capital_base = 0
     # 투자원금을 설정함. 지정하지 않으면 기본값을 사용함
 
+    context.market_benchmark = 'SP500'
+    # 지정하면 win_rate 계산 시에 비교, 지정 안하면 절대수익(0%와 비교)으로 계산
+
     context.i = 0
 
 def handle_data(context, data):
@@ -37,9 +41,10 @@ def handle_data(context, data):
             symbol = order_schedule.loc[i, 'symbol']
             price = order_schedule.loc[i, 'price']
             amounts = order_schedule.loc[i, 'amounts']
+            # if amounts > 0:
             deposit(context, price*amounts)
             order(context, [symbol], [price], [amounts])
-
+    balance = context.account['balance']
     mrna_price = data.current_data('MRNA', 'price')
     mrna_amounts = context.portfolio['stock']['MRNA']['amounts']
     nvda_price = data.current_data('NVDA', 'price')
@@ -49,11 +54,11 @@ def handle_data(context, data):
     arvl_price = data.current_data('ARVL', 'price')
     arvl_amounts = context.portfolio['stock']['ARVL']['amounts']
 
-    # bench1_return = context.benchmark['benchmark_class'].benchmark_history(context, context.benchmark['benchmark_symbols'][0], 'return', 1).values[0]
+    bench1_return = context.benchmark['benchmark_class'].benchmark_history(context, context.benchmark['benchmark_symbols'], 'return', 1).values[0]
     # bench2_return = \
     # context.benchmark['benchmark_class'].benchmark_history(context, context.benchmark['benchmark_symbols'][1], 'return',1).values[0]
 
-    record(context, mrna_price=mrna_price, mrna_amounts=mrna_amounts, nvda_price=nvda_price, nvda_amounts=nvda_amounts, amzn_price=amzn_price, amzn_amounts = amzn_amounts, arvl_price=arvl_price, arvl_amounts = arvl_amounts)
+    record(context, balance=balance, bench1_return=bench1_return, mrna_price=mrna_price, mrna_amounts=mrna_amounts, nvda_price=nvda_price, nvda_amounts=nvda_amounts, amzn_price=amzn_price, amzn_amounts = amzn_amounts, arvl_price=arvl_price, arvl_amounts = arvl_amounts)
 
 if __name__ == '__main__':
 
@@ -103,5 +108,9 @@ if __name__ == '__main__':
     tester = BackTester(initialize=my_init, tradingAlgo=handle_data)
 
     result = tester.run(data, benchmark)
+
+    pd.set_option('display.max.columns', 50)
+    pd.set_option('display.max_rows', 1000)
+    print(result)
 
     result.to_csv('C:/Users/ajcltm/Desktop/backtesting/result.csv')

@@ -93,7 +93,6 @@ class AlphaBeta :
             x = np.delete(x, 0, 0)
             # print('x : \n{0}'.format(x))
 
-
         else :
             x = self.querydata.values.reshape(-1,1)
             x = np.delete(x, 0, 0)

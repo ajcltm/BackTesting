@@ -17,6 +17,9 @@ class BackTester:
         self.context.capital_base = 0
         # 투자원금의 기본값을 설정함 (initialize 밑에서 설정하면, initialize에서 투자원금에 특정값을 부여해도 기본값을 다시 부여해버림)
 
+        self.context.market_benchmark = {}
+        # initialize()에서 지정하면 win_rate 계산 시에 비교, 지정 안하면 절대수익(0%와 비교)으로 계산
+
         initialize(self.context)
         # initialize 함수로 context에 symbols와 price 상태 저장(symbols와 price에 해당하는 이름을 반드시 정의해줘야 함)
         # 그 밖에 사용하고자 하는 사용자 정의 key : value 지정할 수 있음 ( ex : context.hold = True )
@@ -72,7 +75,8 @@ class BackTester:
 
         resultColumns = ['date', 'capital_base', 'starting_cash', 'ending_cash',
                          'starting_stock_value', 'ending_stock_value', 'starting_portfolio_value', 'ending_portfolio_value',
-                         'portfolio_return','annualized_return', 'cumulative_return', 'total_profit', 'alpha'] + beta_list
+                         'portfolio_return','annualized_return', 'cumulative_return', 'drawdown_ratio', 'MDD', 'underwater_period',
+                         'win_rate', 'total_profit', 'alpha'] + beta_list
         # result의 컬럼을 미리 만듬(beta_list안에 개수는 가변적임)
         self.result = pd.DataFrame(columns=resultColumns)
         # result 공간 dataframe 만들기 (열만 정의된 빈 dataframe)
@@ -85,6 +89,10 @@ class BackTester:
 
         ending_portfolio_value = self.context.portfolio['cash']
         # 기초평가액은 전날의 기말평가액임(첫날 이전의 기말평가액은 존재 하지 않으므로 초기 셋팅을 첫날 기초현금가로 셋팅해야함)
+
+        drawdown = {'current_value':1, 'current_date':0 ,'max_value' : 0, 'max_value_date': 0, 'MDD':0, 'underwater_period':datetime.timedelta(days=0)}
+
+        winrate = {'win' : 0, 'not_win' : 0}
 
         for i in range(0, len(date_univers)):
             current_time = date_univers.iloc[i]
@@ -106,7 +114,7 @@ class BackTester:
             self.tradingAlgo(self.context, dataquery)
             # tradingAlgo 실행 (tradingAlgo에 context 정보와 데이터를 조회할 수 있는 dataquery 객체를 인자로 넣어줌)
             ending_capital_base = self.context.capital_base
-            if starting_capital_base < ending_capital_base :
+            if starting_capital_base != ending_capital_base :
                 starting_cash += ending_capital_base - starting_capital_base
                 starting_portfolio_value += ending_capital_base - starting_capital_base
             # tradingAlgo 안에서 deposit()이 호출될 경우, starting_cash가 늘어나야하고, 그로인해 starting 평가액도 늘어야함
@@ -133,6 +141,38 @@ class BackTester:
             # 전날 result의 portfolio_return에 오늘 portfolio_return 값을 추가하고, 시리즈를 2차원 배열로 변환함
             annualized_return = np.prod(y+1)**(252/(i+1))-1
 
+            drawdown['current_value'] *= (1+portfolio_return)
+            drawdown['current_date'] = current_time
+            if drawdown['current_value'] > drawdown['max_value'] :
+                drawdown['max_value'] = drawdown['current_value']
+                drawdown['max_value_date'] = drawdown['current_date']
+            drawdown_ratio = (drawdown['current_value'] - drawdown['max_value']) / drawdown['max_value']
+            drawdown_period = drawdown['current_date'] - drawdown['max_value_date']
+            if drawdown_ratio < drawdown['MDD'] :
+                drawdown['MDD'] = drawdown_ratio
+            if drawdown_period > drawdown['underwater_period'] :
+                drawdown['underwater_period'] = drawdown_period
+            MDD = drawdown['MDD']
+            underwater_period = drawdown['underwater_period']
+
+            if bool(self.context.market_benchmark):
+                if i == 0 :
+                    benchmark_return = 0
+                else :
+                    benchmark_return = benchmark.benchmark_history(self.context, self.context.market_benchmark, 'return', 1).values[-1]
+
+                if portfolio_return > benchmark_return :
+                    winrate['win'] += 1
+                else :
+                    winrate['not_win'] += 1
+                win_rate = winrate['win'] / (winrate['win'] + winrate['not_win'])
+            else :
+                if portfolio_return > 0 :
+                    winrate['win'] += 1
+                else :
+                    winrate['not_win'] += 1
+                win_rate = winrate['win'] / (winrate['win'] + winrate['not_win'])
+
             if isinstance(benchmark_data, pd.DataFrame):
                 # y = np.append(self.result['portfolio_return'].values, [portfolio_return]).reshape(-1, 1)
                 # 전날 result의 portfolio_return에 오늘 portfolio_return 값을 추가하고, 시리즈를 2차원 배열로 변환함
@@ -157,7 +197,8 @@ class BackTester:
 
             s = pd.Series([current_time, capital_base, starting_cash, ending_cash,
                            starting_stock_value, ending_stock_value, starting_portfolio_value, ending_portfolio_value,
-                           portfolio_return, annualized_return, cumulative_return, total_profit, alpha] + beta_list, index=resultColumns)
+                           portfolio_return, annualized_return, cumulative_return, drawdown_ratio, MDD, underwater_period,
+                           win_rate, total_profit, alpha] + beta_list, index=resultColumns)
             self.result = self.result.append(s, ignore_index=True)
             # result 데이터프레임 공간에 결과값 저장
 
