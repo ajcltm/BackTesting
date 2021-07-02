@@ -75,8 +75,9 @@ class BackTester:
 
         resultColumns = ['date', 'capital_base', 'starting_cash', 'ending_cash',
                          'starting_stock_value', 'ending_stock_value', 'starting_portfolio_value', 'ending_portfolio_value',
-                         'portfolio_return','annualized_return', 'cumulative_return', 'drawdown_ratio', 'MDD', 'underwater_period',
-                         'win_rate', 'total_profit', 'alpha'] + beta_list
+                         'portfolio_return','annualized_return', 'roll_annualized_return',
+                         'cumulative_return', 'drawdown_ratio', 'MDD', 'underwater_period',
+                         'win_rate', 'roll_win_rate', 'winrate win', 'winrate not_win', 'roll_win_rate win', 'roll_win_rate not_win', 'total_profit', 'alpha'] + beta_list
         # result의 컬럼을 미리 만듬(beta_list안에 개수는 가변적임)
         self.result = pd.DataFrame(columns=resultColumns)
         # result 공간 dataframe 만들기 (열만 정의된 빈 dataframe)
@@ -93,6 +94,7 @@ class BackTester:
         drawdown = {'current_value':1, 'current_date':0 ,'max_value' : 0, 'max_value_date': 0, 'MDD':0, 'underwater_period':datetime.timedelta(days=0)}
 
         winrate = {'win' : 0, 'not_win' : 0}
+        roll_winrate = {'win': 0, 'not_win': 0}
 
         for i in range(0, len(date_univers)):
             current_time = date_univers.iloc[i]
@@ -138,9 +140,25 @@ class BackTester:
                 portfolio_return=0
             y = np.append(self.result['portfolio_return'].values, [portfolio_return]).reshape(-1, 1)
 
+            if  i > 250 :
+            # 252개가 채워지면 rolling 시작 ( 0~251 이 252개가 되는 시점이고, 그때 i는 251임)
+                roll_y = np.append(self.result['portfolio_return'].iloc[i-251:i].values, [portfolio_return]).reshape(-1,1)
+                print(i-251, i)
+                print(roll_y)
+                # i가 251일때, result에는 0~250까지만 있을 것이므로 iloc[i-251:i] 로 조회하면 0:251 이므로 0~250까지 조회됨(251개). 이후 하나더 추가하여 252개를 만듬
+            else :
+                roll_y = y
+                print(0, i)
+
             # 전날 result의 portfolio_return에 오늘 portfolio_return 값을 추가하고, 시리즈를 2차원 배열로 변환함
             annualized_return = np.prod(y+1)**(252/(i+1))-1
-
+            print(np.prod(y+1)**((i+1))-1)
+            if  i > 250 :
+                roll_annualized_return = np.prod(roll_y + 1) ** (252 / 252) - 1
+                print(np.prod(y + 1) ** ((i + 1)) - 1)
+            else :
+                roll_annualized_return = annualized_return
+                print(np.prod(y + 1) ** ((i + 1)) - 1)
             drawdown['current_value'] *= (1+portfolio_return)
             drawdown['current_date'] = current_time
             if drawdown['current_value'] > drawdown['max_value'] :
@@ -162,16 +180,62 @@ class BackTester:
                     benchmark_return = benchmark.benchmark_history(self.context, self.context.market_benchmark, 'return', 1).values[-1]
 
                 if portfolio_return > benchmark_return :
+                    # 벤치마크 수익과 비교
                     winrate['win'] += 1
                 else :
                     winrate['not_win'] += 1
                 win_rate = winrate['win'] / (winrate['win'] + winrate['not_win'])
+                if i > 251:
+                    # 처음것을 빼고 다시 정리하는 개념이라서 i=252부터 시작함 -> 253개에서 1개 빼고 252개의 승률을 계산함
+                    if self.result['portfolio_return'].iloc[i - 252] > benchmark_return:
+                        # 1년전 그날 승리 여부 확인
+                        roll_winrate['win'] -= 1
+                        # 1년전 그날 승리했으면 승리한 기록 하나 삭제
+                        if portfolio_return > 0:
+                            # 오늘 결과 확인하고 반영(1년전 기록 하나는 삭제하고 오늘 기록 하나는 넣는 방식) -> 252개가 유지됨(이하내용 동일)
+                            roll_winrate['win'] += 1
+                        else:
+                            roll_winrate['not_win'] += 1
+                    else:
+                        roll_winrate['not_win'] -= 1
+                        if portfolio_return > 0:
+                            roll_winrate['win'] += 1
+                        else:
+                            roll_winrate['not_win'] += 1
+                else:
+                    # 252개가 안되면 rolling 방식으로 계산 하지 않음
+                    roll_winrate['win'] = winrate['win']
+                    roll_winrate['not_win'] = winrate['not_win']
+                roll_win_rate = roll_winrate['win'] / (roll_winrate['win'] + roll_winrate['not_win'])
             else :
                 if portfolio_return > 0 :
+                    # 절대수익 비교
                     winrate['win'] += 1
                 else :
                     winrate['not_win'] += 1
                 win_rate = winrate['win'] / (winrate['win'] + winrate['not_win'])
+                if i > 251 :
+                # 처음것을 빼고 다시 정리하는 개념이라서 i=252부터 시작함 -> 253개에서 1개 빼고 252개의 승률을 계산함
+                    if self.result['portfolio_return'].iloc[i-252] > 0 :
+                       # 1년전 그날 승리 여부 확인
+                        roll_winrate['win'] -= 1
+                       # 1년전 그날 승리했으면 승리한 기록 하나 삭제
+                        if portfolio_return > 0:
+                            # 오늘 결과 확인하고 반영(1년전 기록 하나는 삭제하고 오늘 기록 하나는 넣는 방식) -> 252개가 유지됨(이하내용 동일)
+                            roll_winrate['win'] +=1
+                        else:
+                            roll_winrate['not_win'] += 1
+                    else :
+                        roll_winrate['not_win'] -= 1
+                        if portfolio_return > 0:
+                            roll_winrate['win'] += 1
+                        else:
+                            roll_winrate['not_win'] += 1
+                else :
+                    #252개가 안되면 rolling 방식으로 계산 하지 않음
+                    roll_winrate['win'] = winrate['win']
+                    roll_winrate['not_win'] = winrate['not_win']
+                roll_win_rate = roll_winrate['win'] / (roll_winrate['win'] + roll_winrate['not_win'])
 
             if isinstance(benchmark_data, pd.DataFrame):
                 # y = np.append(self.result['portfolio_return'].values, [portfolio_return]).reshape(-1, 1)
@@ -197,8 +261,9 @@ class BackTester:
 
             s = pd.Series([current_time, capital_base, starting_cash, ending_cash,
                            starting_stock_value, ending_stock_value, starting_portfolio_value, ending_portfolio_value,
-                           portfolio_return, annualized_return, cumulative_return, drawdown_ratio, MDD, underwater_period,
-                           win_rate, total_profit, alpha] + beta_list, index=resultColumns)
+                           portfolio_return, annualized_return, roll_annualized_return,
+                           cumulative_return, drawdown_ratio, MDD, underwater_period,
+                           win_rate, roll_win_rate, winrate['win'], winrate['not_win'], roll_winrate['win'], roll_winrate['not_win'], total_profit, alpha] + beta_list, index=resultColumns)
             self.result = self.result.append(s, ignore_index=True)
             # result 데이터프레임 공간에 결과값 저장
 
