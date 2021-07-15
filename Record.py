@@ -20,7 +20,8 @@ def record(context, **kwagrs):
     reocrdColumns = record.columns
     s_data = [context.current_time] + [value for value in context.record.values()]
     # record dict 값들에 현재시간 추가하여 데이터 정의
-    s = pd.Series(s_data, index=reocrdColumns)
+    s = pd.Series(s_data, index=['date']+list(context.record.keys()))
+    # s = pd.Series(s_data, index=reocrdColumns)
     record = record.append(s, ignore_index=True)
     # record 데이터프레임 공간에 데이터 저장
 
