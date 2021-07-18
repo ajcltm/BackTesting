@@ -75,9 +75,10 @@ class BackTester:
 
         resultColumns = ['date', 'capital_base', 'starting_cash', 'ending_cash',
                          'starting_stock_value', 'ending_stock_value', 'starting_portfolio_value', 'ending_portfolio_value',
-                         'portfolio_return','annualized_return', 'roll_annualized_return',
+                         'portfolio_return','annualized_return', 'roll_annualized_return', 'volatility', 'roll_volatility',
+                         'sharp_ratio', 'roll_sharp_ratio',
                          'cumulative_return', 'drawdown_ratio', 'MDD', 'underwater_period',
-                         'win_rate', 'roll_win_rate', 'winrate win', 'winrate not_win', 'roll_win_rate win', 'roll_win_rate not_win', 'total_profit', 'alpha'] + beta_list
+                         'win_rate', 'roll_win_rate', 'total_profit', 'alpha'] + beta_list
         # result의 컬럼을 미리 만듬(beta_list안에 개수는 가변적임)
         self.result = pd.DataFrame(columns=resultColumns)
         # result 공간 dataframe 만들기 (열만 정의된 빈 dataframe)
@@ -159,6 +160,25 @@ class BackTester:
             else :
                 roll_annualized_return = annualized_return
                 print(np.prod(y + 1) ** ((i + 1)) - 1)
+
+            annualized_return_y = np.append(self.result['annualized_return'].values, [annualized_return]).reshape(-1, 1)
+
+            if i > 250:
+                # 252개가 채워지면 rolling 시작 ( 0~251 이 252개가 되는 시점이고, 그때 i는 251임)
+                roll_annualized_return_y = np.append(self.result['annualized_return'].iloc[i - 251:i].values, [annualized_return]).reshape(-1, 1)
+                print(i - 251, i)
+                print(roll_annualized_return_y)
+                # i가 251일때, result에는 0~250까지만 있을 것이므로 iloc[i-251:i] 로 조회하면 0:251 이므로 0~250까지 조회됨(251개). 이후 하나더 추가하여 252개를 만듬
+            else:
+                roll_annualized_return_y = annualized_return_y
+                print(0, i)
+
+            std_y = np.std(annualized_return_y)
+            roll_std_y = np.std(roll_annualized_return_y)
+
+            sharp_ratio = annualized_return / std_y
+            roll_sharp_ratio = roll_annualized_return / roll_std_y
+
             drawdown['current_value'] *= (1+portfolio_return)
             drawdown['current_date'] = current_time
             if drawdown['current_value'] > drawdown['max_value'] :
@@ -261,9 +281,9 @@ class BackTester:
 
             s = pd.Series([current_time, capital_base, starting_cash, ending_cash,
                            starting_stock_value, ending_stock_value, starting_portfolio_value, ending_portfolio_value,
-                           portfolio_return, annualized_return, roll_annualized_return,
+                           portfolio_return, annualized_return, roll_annualized_return, std_y, roll_std_y, sharp_ratio, roll_sharp_ratio,
                            cumulative_return, drawdown_ratio, MDD, underwater_period,
-                           win_rate, roll_win_rate, winrate['win'], winrate['not_win'], roll_winrate['win'], roll_winrate['not_win'], total_profit, alpha] + beta_list, index=resultColumns)
+                           win_rate, roll_win_rate, total_profit, alpha] + beta_list, index=resultColumns)
             self.result = self.result.append(s, ignore_index=True)
             # result 데이터프레임 공간에 결과값 저장
 
