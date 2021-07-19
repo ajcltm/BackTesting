@@ -86,6 +86,8 @@ class BackTester:
         date_univers = data.drop_duplicates(['date'])['date']
         # date_univers 정의 (데이터에 있는 일자를 중복제거 해서 event를 일으킬 일자 정의)
 
+        date_univers = date_univers.reset_index(drop=True)
+
         self.context.date_univers = date_univers
         # date_univers를 context에 저장함(DataQuery와 AlphaBeta에서 history 함수 호출할때 사용)
 
