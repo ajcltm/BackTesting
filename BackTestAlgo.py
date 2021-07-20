@@ -175,8 +175,8 @@ class BackTester:
                 roll_annualized_return_y = annualized_return_y
                 print(0, i)
 
-            std_y = np.std(annualized_return_y)
-            roll_std_y = np.std(roll_annualized_return_y)
+            std_y = np.std(y) * (252**(1/2))
+            roll_std_y = np.std(roll_y)  * (252**(1/2))
 
             sharp_ratio = annualized_return / std_y
             roll_sharp_ratio = roll_annualized_return / roll_std_y
